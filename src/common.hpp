@@ -56,9 +56,6 @@ typedef MultiscaleBitChance<6,SimpleBitChance>  FLIFBitChancePass2;
 typedef MultiscaleBitChance<6,SimpleBitChance>  FLIFBitChanceTree;
 #endif
 
-extern const int NB_PROPERTIES[];
-extern const int NB_PROPERTIESA[];
-
 extern const int NB_PROPERTIES_scanlines[];
 extern const int NB_PROPERTIES_scanlinesA[];
 
@@ -68,7 +65,9 @@ void initPropRanges_scanlines(Ranges &propRanges, const ColorRanges &ranges, int
 
 ColorVal predict_and_calcProps_scanlines(Properties &properties, const ColorRanges *ranges, const Image &image, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const ColorVal fallback);
 
-void initPropRanges(Ranges &propRanges, const ColorRanges &ranges, int p);
+int nb_properties(int p, int nump, bool isAnimation);
+
+void initPropRanges(Ranges &propRanges, const ColorRanges &ranges, int p, bool isAnimation);
 
 template<typename I> I inline median3(I a, I b, I c) {
     if (a < b) {
@@ -213,9 +212,10 @@ inline ColorVal predict(const Image &image, int z, int p, uint32_t r, uint32_t c
 
 // Actual prediction. Also sets properties. Property vector should already have the right size before calling this.
 template <typename plane_t, typename plane_tY, bool horizontal, bool nobordercases, int p, typename ranges_t>
-ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Image &image, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor) ATTRIBUTE_HOT;
+ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor) ATTRIBUTE_HOT;
 template <typename plane_t, typename plane_tY, bool horizontal, bool nobordercases, int p, typename ranges_t>
-ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Image &image, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor) {
+ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor) {
+    const Image &image = images.at(fr);
     ColorVal guess;
     //int which = 0;
     int index = 0;
@@ -308,10 +308,27 @@ ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ran
         if (nobordercases || c > 1) properties[index++]=PIXEL(z,r,c-2)-left;    // leftleft - left
         else properties[index++]=0;
     }
+
+    if (images.size() > 1) {
+        ColorVal prevMiss = 0;
+        ColorVal prevDiff = 0;
+
+        if (fr > 0) {
+            const Image &prevImage = images.at(fr-1);
+            Properties dummyProperties = properties;
+            ColorVal dummyMin, dummyMax;
+            prevMiss = prevImage(p,z,r,c) - predict_and_calcProps_plane<plane_t, plane_tY, horizontal, nobordercases, p, ranges_t>(dummyProperties, ranges, images, fr-1, plane, planeY, z, r, c, dummyMin, dummyMax, predictor);
+            prevDiff = horizontal ? top - prevImage(p,z,r-1,c) : left - prevImage(p,z,r,c-1);
+        }
+
+        properties.at(index++) = prevMiss;
+        properties.at(index++) = prevDiff;
+    }
+
     return guess;
 }
 
-ColorVal predict_and_calcProps(Properties &properties, const ColorRanges *ranges, const Image &image, const int z, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor);
+ColorVal predict_and_calcProps(Properties &properties, const ColorRanges *ranges, const Images &images, const int fr, const int z, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor);
 
 int plane_zoomlevels(const Image &image, const int beginZL, const int endZL);
 
