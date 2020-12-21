@@ -206,15 +206,17 @@ inline ColorVal predict(const Image &image, int z, int p, uint32_t r, uint32_t c
 
 }
 
+ColorVal predict_and_calcProps(Properties &properties, const ColorRanges *ranges, const Images &images, const int fr, const int z, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor);
+
 #define PIXEL(z,r,c) plane.get_fast(r,c)
 #define PIXELY(z,r,c) planeY.get_fast(r,c)
 
 
 // Actual prediction. Also sets properties. Property vector should already have the right size before calling this.
 template <typename plane_t, typename plane_tY, bool horizontal, bool nobordercases, int p, typename ranges_t>
-ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor) ATTRIBUTE_HOT;
+ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor, bool guessOnly = false) ATTRIBUTE_HOT;
 template <typename plane_t, typename plane_tY, bool horizontal, bool nobordercases, int p, typename ranges_t>
-ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor) {
+ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor, bool guessOnly) {
     const Image &image = images.at(fr);
     ColorVal guess;
     //int which = 0;
@@ -291,6 +293,9 @@ ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ran
         const ColorVal bottomright = (nobordercases || (rightPresent && bottomPresent) ? PIXEL(z,r+1,c+1) : right);
         properties[index++]=right-((bottomright+topright)>>1);
     }
+
+    if (guessOnly) return guess;
+
     properties[index++]=guess;
 //    if (p < 1 || p > 2) properties[index++]=which;
 
@@ -315,9 +320,13 @@ ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ran
 
         if (fr > 0) {
             const Image &prevImage = images.at(fr-1);
+            auto &prevPlane = static_cast<const plane_t&>(prevImage.getPlane(p));
+            auto &prevPlaneY = static_cast<const plane_tY&>(prevImage.getPlane(0));
             Properties dummyProperties = properties;
             ColorVal dummyMin, dummyMax;
-            prevMiss = prevImage(p,z,r,c) - predict_and_calcProps_plane<plane_t, plane_tY, horizontal, nobordercases, p, ranges_t>(dummyProperties, ranges, images, fr-1, plane, planeY, z, r, c, dummyMin, dummyMax, predictor);
+            prevPlane.prepare_zoomlevel(z);
+            prevPlaneY.prepare_zoomlevel(z);
+            prevMiss = prevImage(p,z,r,c) - predict_and_calcProps_plane<plane_t, plane_tY, horizontal, nobordercases, p, ranges_t>(dummyProperties, ranges, images, fr-1, prevPlane, prevPlaneY, z, r, c, dummyMin, dummyMax, predictor, true);
             prevDiff = horizontal ? top - prevImage(p,z,r-1,c) : left - prevImage(p,z,r,c-1);
         }
 
@@ -327,8 +336,6 @@ ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ran
 
     return guess;
 }
-
-ColorVal predict_and_calcProps(Properties &properties, const ColorRanges *ranges, const Images &images, const int fr, const int z, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor);
 
 int plane_zoomlevels(const Image &image, const int beginZL, const int endZL);
 
