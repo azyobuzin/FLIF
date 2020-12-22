@@ -66,7 +66,7 @@ void flif_encode_scanlines_inner(IO& io, FLIF_UNUSED(Rac& rac), std::vector<Code
         i++;
         if (ranges->min(p) >= ranges->max(p)) continue;
         const ColorVal minP = ranges->min(p);
-        Properties properties((nump>3?NB_PROPERTIES_scanlinesA[p]:NB_PROPERTIES_scanlines[p]));
+        Properties properties(nb_properties_scanlines(p, nump, images.size() > 1));
         v_printf_tty(2,"\r%i%% done [%i/%i] ENC[%ux%u]    ",(int)(100*pixels_done/pixels_todo),i,nump,images[0].cols(),images[0].rows());
         pixels_done += images[0].cols()*images[0].rows();
         for (uint32_t r = 0; r < images[0].rows(); r++) {
@@ -79,7 +79,7 @@ void flif_encode_scanlines_inner(IO& io, FLIF_UNUSED(Rac& rac), std::vector<Code
 #ifdef SUPPORT_ANIMATION
                 if (FRA && p<4 && image(4,r,c) > 0) continue;
 #endif
-                ColorVal guess = predict_and_calcProps_scanlines(properties,ranges,image,p,r,c,min,max, minP);
+                ColorVal guess = predict_and_calcProps_scanlines(properties,ranges,images,fr,p,r,c,min,max, minP);
                 ColorVal curr = image(p,r,c);
                 assert(p != 3 || curr >= -fr);
 #ifdef SUPPORT_ANIMATION
@@ -106,7 +106,7 @@ void flif_encode_scanlines_pass(IO& io, Rac &rac, const Images &images, const Co
 
     for (int p = 0; p < ranges->numPlanes(); p++) {
         Ranges propRanges;
-        initPropRanges_scanlines(propRanges, *ranges, p);
+        initPropRanges_scanlines(propRanges, *ranges, p, images.size() > 1);
         coders.emplace_back(rac, propRanges, forest[p], options.split_threshold, options.cutoff, options.alpha);
     }
 
@@ -427,7 +427,7 @@ void flif_make_lossy_scanlines(Images &images, const ColorRanges *ranges, int lo
         if (ranges->min(p) >= ranges->max(p)) continue;
         const ColorVal minP = ranges->min(p);
         ColorVal min, max;
-        Properties properties((nump>3?NB_PROPERTIES_scanlinesA[p]:NB_PROPERTIES_scanlines[p]));
+        Properties properties(nb_properties_scanlines(p, nump, images.size() > 1));
         for (uint32_t r = 0; r < images[0].rows(); r++) {
             for (int fr=0; fr< (int)images.size(); fr++) {
               Image& image = images[fr];
@@ -436,7 +436,7 @@ void flif_make_lossy_scanlines(Images &images, const ColorRanges *ranges, int lo
                 if (adaptive && (map(0,r,c) == 255)) continue;
                 if (alphazero && p<3 && image(3,r,c) == 0) continue;
                 if (FRA && p<4 && image(4,r,c) > 0) continue;
-                ColorVal guess = predict_and_calcProps_scanlines(properties,ranges,image,p,r,c,min,max, minP);
+                ColorVal guess = predict_and_calcProps_scanlines(properties,ranges,images,fr,p,r,c,min,max, minP);
                 ColorVal curr = image(p,r,c);
                 if (FRA && p==4 && max > fr) max = fr;
                 ColorVal diff = flif_make_lossy(min - guess, max - guess, curr - guess,
@@ -670,7 +670,7 @@ template<typename IO, typename BitChance, typename Rac> void flif_encode_tree(FL
 {
     for (int p = 0; p < ranges->numPlanes(); p++) {
         Ranges propRanges;
-        if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p);
+        if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p, isAnimation);
         else initPropRanges(propRanges, *ranges, p, isAnimation);
         MetaPropertySymbolCoder<BitChance, Rac> metacoder(rac, propRanges);
 //        forest[p].print(stdout);

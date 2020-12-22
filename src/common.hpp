@@ -56,14 +56,13 @@ typedef MultiscaleBitChance<6,SimpleBitChance>  FLIFBitChancePass2;
 typedef MultiscaleBitChance<6,SimpleBitChance>  FLIFBitChanceTree;
 #endif
 
-extern const int NB_PROPERTIES_scanlines[];
-extern const int NB_PROPERTIES_scanlinesA[];
-
 extern const int PLANE_ORDERING[];
 
-void initPropRanges_scanlines(Ranges &propRanges, const ColorRanges &ranges, int p);
+int nb_properties_scanlines(int p, int nump, bool isAnimation);
 
-ColorVal predict_and_calcProps_scanlines(Properties &properties, const ColorRanges *ranges, const Image &image, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const ColorVal fallback);
+void initPropRanges_scanlines(Ranges &propRanges, const ColorRanges &ranges, int p, bool isAnimation);
+
+ColorVal predict_and_calcProps_scanlines(Properties &properties, const ColorRanges *ranges, const Images &images, const int fr, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const ColorVal fallback, const bool guessOnly = false);
 
 int nb_properties(int p, int nump, bool isAnimation);
 
@@ -86,7 +85,8 @@ template<typename I> I inline median3(I a, I b, I c) {
 }
 
 template <typename plane_t, bool nobordercases>
-ColorVal predict_and_calcProps_scanlines_plane(Properties &properties, const ColorRanges *ranges, const Image &image, const plane_t &plane, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const ColorVal fallback) {
+ColorVal predict_and_calcProps_scanlines_plane(Properties &properties, const ColorRanges *ranges, const Images &images, const int fr, const plane_t &plane, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const ColorVal fallback, const bool guessOnly = false) {
+    const Image &image = images.at(fr);
     ColorVal guess;
     int which = 0;
     int index=0;
@@ -106,6 +106,7 @@ ColorVal predict_and_calcProps_scanlines_plane(Properties &properties, const Col
     assert(max <= ranges->max(p));
     assert(guess >= min);
     assert(guess <= max);
+    if (guessOnly) return guess;
     if (guess == gradientTL) which = 0;
     else if (guess == left) which = 1;
     else if (guess == top) which = 2;
@@ -122,6 +123,36 @@ ColorVal predict_and_calcProps_scanlines_plane(Properties &properties, const Col
     else properties[index++] = 0;
     if (nobordercases || c > 1) properties[index++] = plane.get(r,c-2)-left;    // leftleft - left
     else properties[index++] = 0;
+
+    if (images.size() > 1) {
+        ColorVal prevMiss = 0;
+        ColorVal prevDiff = 0;
+
+        if (fr > 0) {
+            const Image &prevImage = images.at(fr-1);
+            auto &prevPlane = static_cast<const plane_t&>(prevImage.getPlane(p));
+
+#ifdef PF_MISS
+            Properties dummyProperties = properties;
+            ColorVal dummyMin, dummyMax;
+            prevMiss = prevImage(p,r,c) - predict_and_calcProps_scanlines_plane<plane_t, nobordercases>(dummyProperties, ranges, images, fr-1, prevPlane, p, r, c, dummyMin, dummyMax, fallback, true);
+#endif
+
+#ifdef PF_TL
+            ColorVal prevLeft = (nobordercases || c>0 ? prevPlane.get(r,c-1) : (r > 0 ? prevPlane.get(r-1, c) : fallback));
+            prevDiff = left - prevLeft;
+#endif
+        }
+
+
+#ifdef PF_MISS
+        properties.at(index++) = prevMiss;
+#endif
+#ifdef PF_TL
+        properties.at(index++) = prevDiff;
+#endif
+    }
+
     return guess;
 }
 
@@ -212,9 +243,9 @@ inline ColorVal predict(const Image &image, int z, int p, uint32_t r, uint32_t c
 
 // Actual prediction. Also sets properties. Property vector should already have the right size before calling this.
 template <typename plane_t, typename plane_tY, bool horizontal, bool nobordercases, int p, typename ranges_t>
-ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor, bool guessOnly = false) ATTRIBUTE_HOT;
+ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor, const bool guessOnly = false) ATTRIBUTE_HOT;
 template <typename plane_t, typename plane_tY, bool horizontal, bool nobordercases, int p, typename ranges_t>
-ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor, bool guessOnly) {
+ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ranges, const Images &images, const int fr, const plane_t &plane, const plane_tY &planeY, const int z, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const int predictor, const bool guessOnly) {
     const Image &image = images.at(fr);
     ColorVal guess;
     //int which = 0;

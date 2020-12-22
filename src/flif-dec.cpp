@@ -78,19 +78,19 @@ void flif_decode_scanline_plane(plane_t &plane, Coder &coder, Images &images, co
       uint32_t c = begin;
       for (; c < 2; c++) {
         if (alphazero && p<3 && alpha.get(r,c) == 0) {plane.set(r,c,predictScanlines_plane(plane,r,c, grey)); continue;}
-        ColorVal guess = predict_and_calcProps_scanlines_plane<plane_t,false>(properties,ranges,image,plane,p,r,c,min,max, minP);
+        ColorVal guess = predict_and_calcProps_scanlines_plane<plane_t,false>(properties,ranges,images,fr,plane,p,r,c,min,max, minP);
         ColorVal curr = coder.read_int(properties, min - guess, max - guess) + guess;
         plane.set(r,c, curr);
       }
       for (; c < end-1; c++) {
         if (alphazero && p<3 && alpha.get(r,c) == 0) {plane.set(r,c,predictScanlines_plane(plane,r,c, grey)); continue;}
-        ColorVal guess = predict_and_calcProps_scanlines_plane<plane_t,true>(properties,ranges,image,plane,p,r,c,min,max, minP);
+        ColorVal guess = predict_and_calcProps_scanlines_plane<plane_t,true>(properties,ranges,images,fr,plane,p,r,c,min,max, minP);
         ColorVal curr = coder.read_int(properties, min - guess, max - guess) + guess;
         plane.set(r,c, curr);
       }
       for (; c < end; c++) {
         if (alphazero && p<3 && alpha.get(r,c) == 0) {plane.set(r,c,predictScanlines_plane(plane,r,c, grey)); continue;}
-        ColorVal guess = predict_and_calcProps_scanlines_plane<plane_t,false>(properties,ranges,image,plane,p,r,c,min,max, minP);
+        ColorVal guess = predict_and_calcProps_scanlines_plane<plane_t,false>(properties,ranges,images,fr,plane,p,r,c,min,max, minP);
         ColorVal curr = coder.read_int(properties, min - guess, max - guess) + guess;
         plane.set(r,c, curr);
       }
@@ -104,7 +104,7 @@ void flif_decode_scanline_plane(plane_t &plane, Coder &coder, Images &images, co
         if (FRA && p<4 && image.getFRA(r,c) > 0) {assert(fr >= image.getFRA(r,c)); plane.set(r,c,images[fr-image.getFRA(r,c)](p,r,c)); continue;}
 #endif
         //calculate properties and use them to decode the next pixel
-        ColorVal guess = predict_and_calcProps_scanlines_plane<plane_t,false>(properties,ranges,image,plane,p,r,c,min,max, minP);
+        ColorVal guess = predict_and_calcProps_scanlines_plane<plane_t,false>(properties,ranges,images,fr,plane,p,r,c,min,max, minP);
 #ifdef SUPPORT_ANIMATION
         if (FRA && p==4 && max > fr) max = fr;
 #endif
@@ -192,7 +192,7 @@ bool flif_decode_scanlines_inner(IO &io, FLIF_UNUSED(Rac &rac), std::vector<Code
         int p=PLANE_ORDERING[k];
         if (p>=nump) continue;
         i++;
-        Properties properties((nump>3?NB_PROPERTIES_scanlinesA[p]:NB_PROPERTIES_scanlines[p]));
+        Properties properties(nb_properties_scanlines(p, nump, images.size() > 1));
         if ((100*pixels_done > options.quality*pixels_todo)) {
           v_printf(5,"%lu subpixels done, %lu subpixels todo, quality target %i%% reached (%i%%)\n",(long unsigned)pixels_done,(long unsigned)pixels_todo,(int)options.quality,(int)(100*pixels_done/pixels_todo));
           return false;
@@ -248,7 +248,7 @@ bool flif_decode_scanlines_pass(IO& io, Rac &rac, Images &images, const ColorRan
     coders.reserve(images[0].numPlanes());
     for (int p = 0; p < images[0].numPlanes(); p++) {
         Ranges propRanges;
-        initPropRanges_scanlines(propRanges, *ranges, p);
+        initPropRanges_scanlines(propRanges, *ranges, p, images.size() > 1);
         coders.emplace_back(rac, propRanges, forest[p], 0, options.cutoff, options.alpha);
     }
     return flif_decode_scanlines_inner<IO,Rac,Coder>(io, rac, coders, images, ranges, options, transforms, callback, user_data, partial_images);
@@ -860,7 +860,7 @@ template<typename IO, typename BitChance, typename Rac> bool flif_decode_tree(FL
     try {
       for (int p = 0; p < ranges->numPlanes(); p++) {
         Ranges propRanges;
-        if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p);
+        if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p, isAnimation);
         else initPropRanges(propRanges, *ranges, p, isAnimation);
         MetaPropertySymbolCoder<BitChance, Rac> metacoder(rac, propRanges);
         if (ranges->min(p)<ranges->max(p))

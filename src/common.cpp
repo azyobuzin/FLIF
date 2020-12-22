@@ -45,7 +45,21 @@ const int PLANE_ORDERING[] = {4,3,0,1,2}; // FRA (lookback), A, Y, Co, Cg
 // MANIAC property information for non-interlaced images
 const int NB_PROPERTIES_scanlines[] = {7,8,9,7,7};
 const int NB_PROPERTIES_scanlinesA[] = {8,9,10,7,7};
-void initPropRanges_scanlines(Ranges &propRanges, const ColorRanges &ranges, int p) {
+
+int nb_properties_scanlines(int p, int nump, bool isAnimation) {
+    int n = nump > 3 ? NB_PROPERTIES_scanlinesA[p] : NB_PROPERTIES_scanlines[p];
+    if (isAnimation) {
+#ifdef PF_MISS
+      n++;
+#endif
+#ifdef PF_TL
+      n++;
+#endif
+    }
+    return n;
+}
+
+void initPropRanges_scanlines(Ranges &propRanges, const ColorRanges &ranges, int p, bool isAnimation) {
     propRanges.clear();
     int min = ranges.min(p);
     int max = ranges.max(p);
@@ -64,10 +78,19 @@ void initPropRanges_scanlines(Ranges &propRanges, const ColorRanges &ranges, int
     propRanges.push_back(std::make_pair(mind,maxd));
     propRanges.push_back(std::make_pair(mind,maxd));
     propRanges.push_back(std::make_pair(mind,maxd));
+
+    if (isAnimation) {
+#ifdef PF_MISS
+      propRanges.push_back(std::make_pair(mind,maxd)); // previous frame prediction miss
+#endif
+#ifdef PF_TL
+      propRanges.push_back(std::make_pair(mind,maxd)); // top/left (current frame) - top/left (previous frame)
+#endif
+    }
 }
 
-ColorVal predict_and_calcProps_scanlines(Properties &properties, const ColorRanges *ranges, const Image &image, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const ColorVal fallback) {
-    return predict_and_calcProps_scanlines_plane<GeneralPlane,false>(properties,ranges,image,image.getPlane(p),p,r,c,min,max, fallback);
+ColorVal predict_and_calcProps_scanlines(Properties &properties, const ColorRanges *ranges, const Images &images, const int fr, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const ColorVal fallback, const bool guessOnly) {
+    return predict_and_calcProps_scanlines_plane<GeneralPlane,false>(properties,ranges,images,fr,images.at(fr).getPlane(p),p,r,c,min,max, fallback, guessOnly);
 }
 
 
