@@ -77,7 +77,14 @@ const int NB_PROPERTIESA[] = {9,11,10,8,8};
 
 int nb_properties(int p, int nump, bool isAnimation) {
     int n = nump > 3 ? NB_PROPERTIESA[p] : NB_PROPERTIES[p];
-    if (isAnimation) n += 2;
+    if (isAnimation) {
+#ifdef PF_MISS
+      n++;
+#endif
+#ifdef PF_TL
+      n++;
+#endif
+    }
     return n;
 }
 
@@ -114,8 +121,12 @@ void initPropRanges(Ranges &propRanges, const ColorRanges &ranges, int p, bool i
     }
 
     if (isAnimation) {
+#ifdef PF_MISS
       propRanges.push_back(std::make_pair(mind,maxd)); // previous frame prediction miss
-      propRanges.push_back(std::make_pair(mind,maxd)); // top/left (previous frame) - top/left (current frame)
+#endif
+#ifdef PF_TL
+      propRanges.push_back(std::make_pair(mind,maxd)); // top/left (current frame) - top/left (previous frame)
+#endif
     }
 }
 

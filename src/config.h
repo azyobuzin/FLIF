@@ -90,7 +90,9 @@
 #define CONTEXT_TREE_MIN_COUNT 1
 #define CONTEXT_TREE_MAX_COUNT 512
 
-
+// previous frame properties
+#define PF_MISS 1
+#define PF_TL 1
 
 // DEFAULT ENCODE/DECODE OPTIONS ARE DEFINED BELOW
 
