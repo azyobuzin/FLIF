@@ -42,7 +42,7 @@ extern int progressive_qual_shown;
 #define MAX_TRANSFORM 13
 #define MAX_PREDICTOR 2
 
-extern const std::vector<std::string> transforms;
+extern const char *transforms[];
 
 typedef SimpleBitChance                         FLIFBitChancePass1;
 

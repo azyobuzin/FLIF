@@ -19,11 +19,11 @@ limitations under the License.
 #include "common.hpp"
 
 // These are the names of the transformations done before encoding / after decoding
-const std::vector<std::string> transforms = {"Channel_Compact", "YCoCg", "?? YCbCr ??", "PermutePlanes", "Bounds",  // color space / ranges
-                                             "Palette_Alpha", "Palette", "Color_Buckets",  // sparse-color transforms
-                                             "?? DCT ??", "?? DWT ??", // JPEG-style transforms, not implemented (but maybe in future versions?)
-                                             "Duplicate_Frame", "Frame_Shape", "Frame_Lookback", // animation-related transforms
-                                             "?? Other ??" };
+const char *transforms[] = {"Channel_Compact", "YCoCg", "?? YCbCr ??", "PermutePlanes", "Bounds",  // color space / ranges
+                            "Palette_Alpha", "Palette", "Color_Buckets",  // sparse-color transforms
+                            "?? DCT ??", "?? DWT ??", // JPEG-style transforms, not implemented (but maybe in future versions?)
+                            "Duplicate_Frame", "Frame_Shape", "Frame_Lookback", // animation-related transforms
+                            "?? Other ??" };
 // Plenty of room for future extensions: transform "Other" can be used to encode identifiers of arbitrary many other transforms
 
 // Some global variables used to show progress and to know when to stop a partial/progressive decode
