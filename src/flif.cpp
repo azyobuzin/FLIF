@@ -121,6 +121,7 @@ void show_help(int mode) {
     v_printf(1,"   -s, --scale=N              lossy downscaled image at scale 1:N (2,4,8,16,32); default -s1\n");
     v_printf(1,"   -r, --resize=WxH           lossy downscaled image to fit inside WxH (but typically smaller)\n");
     v_printf(1,"   -f, --fit=WxH              lossy downscaled image to exactly WxH\n");
+    v_printf(1, "      --print-tree           print MANIAC tree\n");
     v_printf(2,"   -b, --breakpoints          report breakpoints (truncation offsets) for truncations at scales 1:8, 1:4, 1:2\n");
     }
 }
@@ -494,6 +495,7 @@ int main(int argc, char **argv) {
         {"overwrite", 0, NULL, 'o'},
         {"breakpoints", 0, NULL, 'b'},
         {"keep-palette", 0, NULL, 'k'},
+        {"print-tree", 0, NULL, 'a'},
 #ifdef HAS_ENCODER
         {"encode", 0, NULL, 'e'},
         {"transcode", 0, NULL, 't'},
@@ -557,6 +559,7 @@ int main(int argc, char **argv) {
         case 'i': options.scale = -1; break;
         case 'b': options.show_breakpoints = 8; mode=1; break;
         case 'k': options.keep_palette = true; break;
+        case 'a': options.print_tree = 1; break;
 #ifdef HAS_ENCODER
         case 'e': mode=0; break;
         case 't': mode=2; break;

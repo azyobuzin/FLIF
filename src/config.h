@@ -152,6 +152,7 @@ struct flif_options {
     int show_breakpoints;
     int no_full_decode;
     int keep_palette;
+    int print_tree;
 };
 
 const struct flif_options FLIF_DEFAULT_OPTIONS = {
@@ -191,4 +192,5 @@ const struct flif_options FLIF_DEFAULT_OPTIONS = {
     0, // show_breakpoints
     0, // no_full_decode
     0, // keep_palette
+    0, // print_tree
 };

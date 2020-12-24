@@ -105,9 +105,9 @@ void flif_encode_scanlines_pass(IO& io, Rac &rac, const Images &images, const Co
     coders.reserve(ranges->numPlanes());
 
     for (int p = 0; p < ranges->numPlanes(); p++) {
-        Ranges propRanges;
+        PropNamesAndRanges propRanges;
         initPropRanges_scanlines(propRanges, *ranges, p, images.size() > 1);
-        coders.emplace_back(rac, propRanges, forest[p], options.split_threshold, options.cutoff, options.alpha);
+        coders.emplace_back(rac, propRanges.ranges, forest[p], options.split_threshold, options.cutoff, options.alpha);
     }
 
     while(repeats-- > 0) {
@@ -291,9 +291,9 @@ void flif_encode_FLIF2_pass(IO& io, Rac &rac, const Images &images, const ColorR
     std::vector<Coder> coders;
     coders.reserve(ranges->numPlanes());
     for (int p = 0; p < ranges->numPlanes(); p++) {
-        Ranges propRanges;
+        PropNamesAndRanges propRanges;
         initPropRanges(propRanges, *ranges, p, images.size() > 1);
-        coders.emplace_back(rac, propRanges, forest[p], options.split_threshold, options.cutoff, options.alpha);
+        coders.emplace_back(rac, propRanges.ranges, forest[p], options.split_threshold, options.cutoff, options.alpha);
     }
 
     if (beginZL == images[0].zooms() && endZL>0) {
@@ -669,10 +669,10 @@ void flif_make_lossy_interlaced(Images &images, const ColorRanges * ranges, int 
 template<typename IO, typename BitChance, typename Rac> void flif_encode_tree(FLIF_UNUSED(IO& io), Rac &rac, const ColorRanges *ranges, const std::vector<Tree> &forest, const flifEncoding encoding, bool isAnimation)
 {
     for (int p = 0; p < ranges->numPlanes(); p++) {
-        Ranges propRanges;
+        PropNamesAndRanges propRanges;
         if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p, isAnimation);
         else initPropRanges(propRanges, *ranges, p, isAnimation);
-        MetaPropertySymbolCoder<BitChance, Rac> metacoder(rac, propRanges);
+        MetaPropertySymbolCoder<BitChance, Rac> metacoder(rac, propRanges.ranges);
 //        forest[p].print(stdout);
         if (ranges->min(p)<ranges->max(p))
         metacoder.write_tree(forest[p]);

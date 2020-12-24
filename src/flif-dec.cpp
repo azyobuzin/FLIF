@@ -247,9 +247,9 @@ bool flif_decode_scanlines_pass(IO& io, Rac &rac, Images &images, const ColorRan
     std::vector<Coder> coders;
     coders.reserve(images[0].numPlanes());
     for (int p = 0; p < images[0].numPlanes(); p++) {
-        Ranges propRanges;
+        PropNamesAndRanges propRanges;
         initPropRanges_scanlines(propRanges, *ranges, p, images.size() > 1);
-        coders.emplace_back(rac, propRanges, forest[p], 0, options.cutoff, options.alpha);
+        coders.emplace_back(rac, propRanges.ranges, forest[p], 0, options.cutoff, options.alpha);
     }
     return flif_decode_scanlines_inner<IO,Rac,Coder>(io, rac, coders, images, ranges, options, transforms, callback, user_data, partial_images);
 }
@@ -823,9 +823,9 @@ bool flif_decode_FLIF2_pass(IO &io, Rac &rac, Images &images, const ColorRanges 
     std::vector<Coder> coders;
     coders.reserve(images[0].numPlanes());
     for (int p = 0; p < images[0].numPlanes(); p++) {
-        Ranges propRanges;
+        PropNamesAndRanges propRanges;
         initPropRanges(propRanges, *ranges, p, images.size() > 1);
-        coders.emplace_back(rac, propRanges, forest[p], 0, options.cutoff, options.alpha);
+        coders.emplace_back(rac, propRanges.ranges, forest[p], 0, options.cutoff, options.alpha);
     }
 
     if (beginZL == images[0].zooms() && endZL > 0) {
@@ -853,19 +853,35 @@ bool flif_decode_FLIF2_pass(IO &io, Rac &rac, Images &images, const ColorRanges 
         return flif_decode_FLIF2_inner<IO,Rac,Coder,ColorRanges>(io, rac, coders, images, ranges, beginZL, endZL, options, transforms, callback, user_data, partial_images);
 }
 
+void print_tree(const int p, const Tree &tree, const std::vector<const char*> propNames) {
+    FILE *f = stderr;
+    fprintf(f, "digraph P%d {\n", p);
 
+    for (uint32_t i = 0; i < tree.size(); i++) {
+        const auto &node = tree[i];
+        if (node.property == -1) {
+            fprintf(f, "N%04u [label=Leaf];\n", i);
+        } else {
+            const char *propName = propNames.at(node.property);
+            fprintf(f, "N%04u [label=\"%s > %d\\nCount: %d\"];\n", i, propName, node.splitval, node.count);
+            fprintf(f, "N%04u -> N%04u [label=\">\"];\nN%04u -> N%04u [label=\"<=\"];\n", i, node.childID, i, node.childID + 1);
+        }
+    }
 
-template<typename IO, typename BitChance, typename Rac> bool flif_decode_tree(FLIF_UNUSED(IO& io), Rac &rac, const ColorRanges *ranges, std::vector<Tree> &forest, const flifEncoding encoding, bool isAnimation)
+    fprintf(f, "}\n");
+}
+
+template<typename IO, typename BitChance, typename Rac> bool flif_decode_tree(FLIF_UNUSED(IO& io), Rac &rac, const ColorRanges *ranges, std::vector<Tree> &forest, const flifEncoding encoding, const bool isAnimation, const bool printTree)
 {
     try {
       for (int p = 0; p < ranges->numPlanes(); p++) {
-        Ranges propRanges;
+        PropNamesAndRanges propRanges;
         if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p, isAnimation);
         else initPropRanges(propRanges, *ranges, p, isAnimation);
-        MetaPropertySymbolCoder<BitChance, Rac> metacoder(rac, propRanges);
+        MetaPropertySymbolCoder<BitChance, Rac> metacoder(rac, propRanges.ranges);
         if (ranges->min(p)<ranges->max(p))
         if (!metacoder.read_tree(forest[p])) {return false;}
-//        forest[p].print(stdout);
+        if (printTree) print_tree(p, forest[p], propRanges.names);
       }
     } catch (std::bad_alloc& ba) {
         e_printf("Error: could not allocate enough memory for MANIAC trees.\n");
@@ -899,7 +915,7 @@ bool flif_decode_main(RacIn<IO>& rac, IO& io, Images &images, const ColorRanges 
       return pixels_done >= pixels_todo;
     } else {
       v_printf(3,"Decoded header + rough data. Decoding MANIAC tree.\n");
-      if (!flif_decode_tree<IO, FLIFBitChanceTree, RacIn<IO>>(io, rac, ranges, forest, options.method.encoding, images.size() > 1)) {
+      if (!flif_decode_tree<IO, FLIFBitChanceTree, RacIn<IO>>(io, rac, ranges, forest, options.method.encoding, images.size() > 1, options.print_tree)) {
          if (options.method.encoding == flifEncoding::interlaced) {
             v_printf(1,"File probably truncated in the middle of MANIAC tree representation. Interpolating.\n");
             std::vector<int> zoomlevels(ranges->numPlanes(),roughZL);

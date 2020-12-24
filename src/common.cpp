@@ -59,32 +59,30 @@ int nb_properties_scanlines(int p, int nump, bool isAnimation) {
     return n;
 }
 
-void initPropRanges_scanlines(Ranges &propRanges, const ColorRanges &ranges, int p, bool isAnimation) {
-    propRanges.clear();
+void initPropRanges_scanlines(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, bool isAnimation) {
     int min = ranges.min(p);
     int max = ranges.max(p);
     int mind = min - max, maxd = max - min;
 
     if (p < 3) {
-      for (int pp = 0; pp < p; pp++) {
-        propRanges.push_back(std::make_pair(ranges.min(pp), ranges.max(pp)));  // pixels on previous planes
-      }
-      if (ranges.numPlanes()>3) propRanges.push_back(std::make_pair(ranges.min(3), ranges.max(3)));  // pixel on alpha plane
+      if (p > 0) propRanges.push_back("X0", std::make_pair(ranges.min(0), ranges.max(0)));
+      if (p > 1) propRanges.push_back("X1", std::make_pair(ranges.min(1), ranges.max(1)));
+      if (ranges.numPlanes()>3) propRanges.push_back("X3", std::make_pair(ranges.min(3), ranges.max(3)));  // pixel on alpha plane
     }
-    propRanges.push_back(std::make_pair(min,max));   // guess (median of 3)
-    propRanges.push_back(std::make_pair(0,2));       // which predictor was it
-    propRanges.push_back(std::make_pair(mind,maxd));
-    propRanges.push_back(std::make_pair(mind,maxd));
-    propRanges.push_back(std::make_pair(mind,maxd));
-    propRanges.push_back(std::make_pair(mind,maxd));
-    propRanges.push_back(std::make_pair(mind,maxd));
+    propRanges.push_back("P", std::make_pair(min,max));   // guess (median of 3)
+    propRanges.push_back("Mi", std::make_pair(0,2));      // which predictor was it
+    propRanges.push_back("L-TL", std::make_pair(mind,maxd));
+    propRanges.push_back("TL-T", std::make_pair(mind,maxd));
+    propRanges.push_back("T-TR", std::make_pair(mind,maxd));
+    propRanges.push_back("TT-T", std::make_pair(mind,maxd));
+    propRanges.push_back("LL-L", std::make_pair(mind,maxd));
 
     if (isAnimation) {
 #ifdef PF_MISS
-      propRanges.push_back(std::make_pair(mind,maxd)); // previous frame prediction miss
+      propRanges.push_back("PF Miss", std::make_pair(mind,maxd)); // previous frame prediction miss
 #endif
 #ifdef PF_TL
-      propRanges.push_back(std::make_pair(mind,maxd)); // top/left (current frame) - top/left (previous frame)
+      propRanges.push_back("PF L", std::make_pair(mind,maxd)); // left (current frame) - left (previous frame)
 #endif
     }
 }
@@ -111,27 +109,25 @@ int nb_properties(int p, int nump, bool isAnimation) {
     return n;
 }
 
-void initPropRanges(Ranges &propRanges, const ColorRanges &ranges, int p, bool isAnimation) {
-    propRanges.clear();
+void initPropRanges(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, bool isAnimation) {
     int min = ranges.min(p);
     int max = ranges.max(p);
     int mind = min - max, maxd = max - min;
     if (p < 3) {       // alpha channel first
-      for (int pp = 0; pp < p; pp++) {
-        propRanges.push_back(std::make_pair(ranges.min(pp), ranges.max(pp)));  // pixels on previous planes
-      }
-      if (ranges.numPlanes()>3) propRanges.push_back(std::make_pair(ranges.min(3), ranges.max(3)));  // pixel on alpha plane
+      if (p > 0) propRanges.push_back("X0", std::make_pair(ranges.min(0), ranges.max(0)));
+      if (p > 1) propRanges.push_back("X1", std::make_pair(ranges.min(1), ranges.max(1)));
+      if (ranges.numPlanes()>3) propRanges.push_back("X3", std::make_pair(ranges.min(3), ranges.max(3)));  // pixel on alpha plane
     }
 
     //if (p<1 || p>2) 
-    propRanges.push_back(std::make_pair(0,2));       // median predictor: which of the three values is the median?
+    propRanges.push_back("Mi", std::make_pair(0,2));       // median predictor: which of the three values is the median?
 
-    if (p==1 || p==2) propRanges.push_back(std::make_pair(ranges.min(0)-ranges.max(0),ranges.max(0)-ranges.min(0))); // luma prediction miss
-    propRanges.push_back(std::make_pair(mind,maxd)); // neighbor A - neighbor B   (top-bottom or left-right)
-    propRanges.push_back(std::make_pair(mind,maxd)); // top/left prediction miss (previous pixel)
-    propRanges.push_back(std::make_pair(mind,maxd)); // left/top prediction miss (other direction)
-    propRanges.push_back(std::make_pair(mind,maxd)); // bottom/right prediction miss
-    propRanges.push_back(std::make_pair(min,max));   // guess
+    if (p==1 || p==2) propRanges.push_back("Luma Miss", std::make_pair(ranges.min(0)-ranges.max(0),ranges.max(0)-ranges.min(0))); // luma prediction miss
+    propRanges.push_back("T-B/L-R", std::make_pair(mind,maxd));  // neighbor A - neighbor B   (top-bottom or left-right)
+    propRanges.push_back("T/L Miss", std::make_pair(mind,maxd)); // top/left prediction miss (previous pixel)
+    propRanges.push_back("L/T Miss", std::make_pair(mind,maxd)); // left/top prediction miss (other direction)
+    propRanges.push_back("B/R Miss", std::make_pair(mind,maxd)); // bottom/right prediction miss
+    propRanges.push_back("P", std::make_pair(min,max));          // guess
 
 //    propRanges.push_back(std::make_pair(mind,maxd));  // left - topleft
 //    propRanges.push_back(std::make_pair(mind,maxd));  // topleft - top
@@ -139,16 +135,16 @@ void initPropRanges(Ranges &propRanges, const ColorRanges &ranges, int p, bool i
 //    if (p == 0 || p > 2)
 //      propRanges.push_back(std::make_pair(mind,maxd)); // top - topright
     if (p != 2) {
-      propRanges.push_back(std::make_pair(mind,maxd)); // toptop - top
-      propRanges.push_back(std::make_pair(mind,maxd)); // leftleft - left
+      propRanges.push_back("TT-T", std::make_pair(mind,maxd)); // toptop - top
+      propRanges.push_back("LL-L", std::make_pair(mind,maxd)); // leftleft - left
     }
 
     if (isAnimation) {
 #ifdef PF_MISS
-      propRanges.push_back(std::make_pair(mind,maxd)); // previous frame prediction miss
+      propRanges.push_back("PF Miss", std::make_pair(mind,maxd)); // previous frame prediction miss
 #endif
 #ifdef PF_TL
-      propRanges.push_back(std::make_pair(mind,maxd)); // top/left (current frame) - top/left (previous frame)
+      propRanges.push_back("PF T/L", std::make_pair(mind,maxd)); // top/left (current frame) - top/left (previous frame)
 #endif
     }
 }

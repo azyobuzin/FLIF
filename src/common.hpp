@@ -58,15 +58,26 @@ typedef MultiscaleBitChance<6,SimpleBitChance>  FLIFBitChanceTree;
 
 extern const int PLANE_ORDERING[];
 
+class PropNamesAndRanges {
+public:
+    std::vector<const char*> names;
+    Ranges ranges;
+
+    inline void push_back(const char *name, std::pair<PropertyVal,PropertyVal> &&range) {
+        names.push_back(name);
+        ranges.push_back(std::forward<std::pair<PropertyVal,PropertyVal>>(range));
+    }
+};
+
 int nb_properties_scanlines(int p, int nump, bool isAnimation);
 
-void initPropRanges_scanlines(Ranges &propRanges, const ColorRanges &ranges, int p, bool isAnimation);
+void initPropRanges_scanlines(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, bool isAnimation);
 
 ColorVal predict_and_calcProps_scanlines(Properties &properties, const ColorRanges *ranges, const Images &images, const int fr, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const ColorVal fallback, const bool guessOnly = false);
 
 int nb_properties(int p, int nump, bool isAnimation);
 
-void initPropRanges(Ranges &propRanges, const ColorRanges &ranges, int p, bool isAnimation);
+void initPropRanges(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, bool isAnimation);
 
 template<typename I> I inline median3(I a, I b, I c) {
     if (a < b) {
