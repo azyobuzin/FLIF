@@ -248,7 +248,7 @@ bool flif_decode_scanlines_pass(IO& io, Rac &rac, Images &images, const ColorRan
     coders.reserve(images[0].numPlanes());
     for (int p = 0; p < images[0].numPlanes(); p++) {
         PropNamesAndRanges propRanges;
-        initPropRanges_scanlines(propRanges, *ranges, p, images.size() > 1);
+        initPropRanges_scanlines(propRanges, *ranges, p, images.size());
         coders.emplace_back(rac, propRanges.ranges, forest[p], 0, options.cutoff, options.alpha);
     }
     return flif_decode_scanlines_inner<IO,Rac,Coder>(io, rac, coders, images, ranges, options, transforms, callback, user_data, partial_images);
@@ -824,7 +824,7 @@ bool flif_decode_FLIF2_pass(IO &io, Rac &rac, Images &images, const ColorRanges 
     coders.reserve(images[0].numPlanes());
     for (int p = 0; p < images[0].numPlanes(); p++) {
         PropNamesAndRanges propRanges;
-        initPropRanges(propRanges, *ranges, p, images.size() > 1);
+        initPropRanges(propRanges, *ranges, p, images.size());
         coders.emplace_back(rac, propRanges.ranges, forest[p], 0, options.cutoff, options.alpha);
     }
 
@@ -871,13 +871,13 @@ void print_tree(const int p, const Tree &tree, const std::vector<const char*> pr
     fprintf(f, "}\n");
 }
 
-template<typename IO, typename BitChance, typename Rac> bool flif_decode_tree(FLIF_UNUSED(IO& io), Rac &rac, const ColorRanges *ranges, std::vector<Tree> &forest, const flifEncoding encoding, const bool isAnimation, const bool printTree)
+template<typename IO, typename BitChance, typename Rac> bool flif_decode_tree(FLIF_UNUSED(IO& io), Rac &rac, const ColorRanges *ranges, std::vector<Tree> &forest, const flifEncoding encoding, const int nb_frames, const bool printTree)
 {
     try {
       for (int p = 0; p < ranges->numPlanes(); p++) {
         PropNamesAndRanges propRanges;
-        if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p, isAnimation);
-        else initPropRanges(propRanges, *ranges, p, isAnimation);
+        if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p, nb_frames);
+        else initPropRanges(propRanges, *ranges, p, nb_frames);
         MetaPropertySymbolCoder<BitChance, Rac> metacoder(rac, propRanges.ranges);
         if (ranges->min(p)<ranges->max(p))
         if (!metacoder.read_tree(forest[p])) {return false;}
@@ -915,7 +915,7 @@ bool flif_decode_main(RacIn<IO>& rac, IO& io, Images &images, const ColorRanges 
       return pixels_done >= pixels_todo;
     } else {
       v_printf(3,"Decoded header + rough data. Decoding MANIAC tree.\n");
-      if (!flif_decode_tree<IO, FLIFBitChanceTree, RacIn<IO>>(io, rac, ranges, forest, options.method.encoding, images.size() > 1, options.print_tree)) {
+      if (!flif_decode_tree<IO, FLIFBitChanceTree, RacIn<IO>>(io, rac, ranges, forest, options.method.encoding, images.size(), options.print_tree)) {
          if (options.method.encoding == flifEncoding::interlaced) {
             v_printf(1,"File probably truncated in the middle of MANIAC tree representation. Interpolating.\n");
             std::vector<int> zoomlevels(ranges->numPlanes(),roughZL);

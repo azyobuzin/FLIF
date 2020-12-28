@@ -71,13 +71,13 @@ public:
 
 int nb_properties_scanlines(int p, int nump, bool isAnimation);
 
-void initPropRanges_scanlines(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, bool isAnimation);
+void initPropRanges_scanlines(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, int nb_frames);
 
 ColorVal predict_and_calcProps_scanlines(Properties &properties, const ColorRanges *ranges, const Images &images, const int fr, const int p, const uint32_t r, const uint32_t c, ColorVal &min, ColorVal &max, const ColorVal fallback, const bool guessOnly = false);
 
 int nb_properties(int p, int nump, bool isAnimation);
 
-void initPropRanges(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, bool isAnimation);
+void initPropRanges(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, int nb_frames);
 
 template<typename I> I inline median3(I a, I b, I c) {
     if (a < b) {
@@ -143,24 +143,27 @@ ColorVal predict_and_calcProps_scanlines_plane(Properties &properties, const Col
             const Image &prevImage = images.at(fr-1);
             auto &prevPlane = static_cast<const plane_t&>(prevImage.getPlane(p));
 
-#ifdef PF_MISS
+#ifdef PROP_PF_MISS
             Properties dummyProperties = properties;
             ColorVal dummyMin, dummyMax;
             prevMiss = prevImage(p,r,c) - predict_and_calcProps_scanlines_plane<plane_t, nobordercases>(dummyProperties, ranges, images, fr-1, prevPlane, p, r, c, dummyMin, dummyMax, fallback, true);
 #endif
 
-#ifdef PF_TL
+#ifdef PROP_PF_TL
             ColorVal prevLeft = (nobordercases || c>0 ? prevPlane.get(r,c-1) : (r > 0 ? prevPlane.get(r-1, c) : fallback));
             prevDiff = left - prevLeft;
 #endif
         }
 
 
-#ifdef PF_MISS
+#ifdef PROP_PF_MISS
         properties.at(index++) = prevMiss;
 #endif
-#ifdef PF_TL
+#ifdef PROP_PF_TL
         properties.at(index++) = prevDiff;
+#endif
+#ifdef PROP_FR
+        properties.at(index++) = fr;
 #endif
     }
 
@@ -361,7 +364,7 @@ ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ran
         if (fr > 0) {
             const Image &prevImage = images.at(fr-1);
 
-#ifdef PF_MISS
+#ifdef PROP_PF_MISS
             auto &prevPlane = static_cast<const plane_t&>(prevImage.getPlane(p));
             auto &prevPlaneY = static_cast<const plane_tY&>(prevImage.getPlane(0));
             Properties dummyProperties = properties;
@@ -371,17 +374,20 @@ ColorVal predict_and_calcProps_plane(Properties &properties, const ranges_t *ran
             prevMiss = prevImage(p,z,r,c) - predict_and_calcProps_plane<plane_t, plane_tY, horizontal, nobordercases, p, ranges_t>(dummyProperties, ranges, images, fr-1, prevPlane, prevPlaneY, z, r, c, dummyMin, dummyMax, predictor, true);
 #endif
 
-#ifdef PF_TL
+#ifdef PROP_PF_TL
             prevDiff = horizontal ? top - prevImage(p,z,r-1,c) : left - prevImage(p,z,r,c-1);
 #endif
         }
 
 
-#ifdef PF_MISS
+#ifdef PROP_PF_MISS
         properties.at(index++) = prevMiss;
 #endif
-#ifdef PF_TL
+#ifdef PROP_PF_TL
         properties.at(index++) = prevDiff;
+#endif
+#ifdef PROP_FR
+        properties.at(index++) = fr;
 #endif
     }
 

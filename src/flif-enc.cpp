@@ -106,7 +106,7 @@ void flif_encode_scanlines_pass(IO& io, Rac &rac, const Images &images, const Co
 
     for (int p = 0; p < ranges->numPlanes(); p++) {
         PropNamesAndRanges propRanges;
-        initPropRanges_scanlines(propRanges, *ranges, p, images.size() > 1);
+        initPropRanges_scanlines(propRanges, *ranges, p, images.size());
         coders.emplace_back(rac, propRanges.ranges, forest[p], options.split_threshold, options.cutoff, options.alpha);
     }
 
@@ -292,7 +292,7 @@ void flif_encode_FLIF2_pass(IO& io, Rac &rac, const Images &images, const ColorR
     coders.reserve(ranges->numPlanes());
     for (int p = 0; p < ranges->numPlanes(); p++) {
         PropNamesAndRanges propRanges;
-        initPropRanges(propRanges, *ranges, p, images.size() > 1);
+        initPropRanges(propRanges, *ranges, p, images.size());
         coders.emplace_back(rac, propRanges.ranges, forest[p], options.split_threshold, options.cutoff, options.alpha);
     }
 
@@ -666,12 +666,12 @@ void flif_make_lossy_interlaced(Images &images, const ColorRanges * ranges, int 
     }
 }
 
-template<typename IO, typename BitChance, typename Rac> void flif_encode_tree(FLIF_UNUSED(IO& io), Rac &rac, const ColorRanges *ranges, const std::vector<Tree> &forest, const flifEncoding encoding, bool isAnimation)
+template<typename IO, typename BitChance, typename Rac> void flif_encode_tree(FLIF_UNUSED(IO& io), Rac &rac, const ColorRanges *ranges, const std::vector<Tree> &forest, const flifEncoding encoding, const int nb_frames)
 {
     for (int p = 0; p < ranges->numPlanes(); p++) {
         PropNamesAndRanges propRanges;
-        if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p, isAnimation);
-        else initPropRanges(propRanges, *ranges, p, isAnimation);
+        if (encoding==flifEncoding::nonInterlaced) initPropRanges_scanlines(propRanges, *ranges, p, nb_frames);
+        else initPropRanges(propRanges, *ranges, p, nb_frames);
         MetaPropertySymbolCoder<BitChance, Rac> metacoder(rac, propRanges.ranges);
 //        forest[p].print(stdout);
         if (ranges->min(p)<ranges->max(p))
@@ -727,7 +727,7 @@ void flif_encode_main(RacOut<IO>& rac, IO& io, Images &images, const ColorRanges
 
     //v_printf(2,"Encoding tree\n");
     fs = io.ftell();
-    flif_encode_tree<IO, FLIFBitChanceTree, RacOut<IO>>(io, rac, ranges, forest, encoding, images.size() > 1);
+    flif_encode_tree<IO, FLIFBitChanceTree, RacOut<IO>>(io, rac, ranges, forest, encoding, images.size());
     v_printf(3," MANIAC tree: %li bytes.\n", io.ftell()-fs);
     options.divisor=0;
     options.min_size=0;

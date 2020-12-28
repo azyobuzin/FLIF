@@ -49,17 +49,20 @@ const int NB_PROPERTIES_scanlinesA[] = {8,9,10,7,7};
 int nb_properties_scanlines(int p, int nump, bool isAnimation) {
     int n = nump > 3 ? NB_PROPERTIES_scanlinesA[p] : NB_PROPERTIES_scanlines[p];
     if (isAnimation) {
-#ifdef PF_MISS
+#ifdef PROP_PF_MISS
       n++;
 #endif
-#ifdef PF_TL
+#ifdef PROP_PF_TL
+      n++;
+#endif
+#ifdef PROP_FR
       n++;
 #endif
     }
     return n;
 }
 
-void initPropRanges_scanlines(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, bool isAnimation) {
+void initPropRanges_scanlines(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, int nb_frames) {
     int min = ranges.min(p);
     int max = ranges.max(p);
     int mind = min - max, maxd = max - min;
@@ -77,12 +80,15 @@ void initPropRanges_scanlines(PropNamesAndRanges &propRanges, const ColorRanges 
     propRanges.push_back("TT-T", std::make_pair(mind,maxd));
     propRanges.push_back("LL-L", std::make_pair(mind,maxd));
 
-    if (isAnimation) {
-#ifdef PF_MISS
+    if (nb_frames > 1) {
+#ifdef PROP_PF_MISS
       propRanges.push_back("PF Miss", std::make_pair(mind,maxd)); // previous frame prediction miss
 #endif
-#ifdef PF_TL
+#ifdef PROP_PF_TL
       propRanges.push_back("PF L", std::make_pair(mind,maxd)); // left (current frame) - left (previous frame)
+#endif
+#ifdef PROP_FR
+      propRanges.push_back("Fr", std::make_pair(0,nb_frames-1)); // frame index
 #endif
     }
 }
@@ -99,17 +105,20 @@ const int NB_PROPERTIESA[] = {9,11,10,8,8};
 int nb_properties(int p, int nump, bool isAnimation) {
     int n = nump > 3 ? NB_PROPERTIESA[p] : NB_PROPERTIES[p];
     if (isAnimation) {
-#ifdef PF_MISS
+#ifdef PROP_PF_MISS
       n++;
 #endif
-#ifdef PF_TL
+#ifdef PROP_PF_TL
+      n++;
+#endif
+#ifdef PROP_FR
       n++;
 #endif
     }
     return n;
 }
 
-void initPropRanges(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, bool isAnimation) {
+void initPropRanges(PropNamesAndRanges &propRanges, const ColorRanges &ranges, int p, int nb_frames) {
     int min = ranges.min(p);
     int max = ranges.max(p);
     int mind = min - max, maxd = max - min;
@@ -139,12 +148,15 @@ void initPropRanges(PropNamesAndRanges &propRanges, const ColorRanges &ranges, i
       propRanges.push_back("LL-L", std::make_pair(mind,maxd)); // leftleft - left
     }
 
-    if (isAnimation) {
-#ifdef PF_MISS
+    if (nb_frames > 1) {
+#ifdef PROP_PF_MISS
       propRanges.push_back("PF Miss", std::make_pair(mind,maxd)); // previous frame prediction miss
 #endif
-#ifdef PF_TL
+#ifdef PROP_PF_TL
       propRanges.push_back("PF T/L", std::make_pair(mind,maxd)); // top/left (current frame) - top/left (previous frame)
+#endif
+#ifdef PROP_FR
+      propRanges.push_back("Fr", std::make_pair(0,nb_frames-1));
 #endif
     }
 }
