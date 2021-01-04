@@ -70,7 +70,7 @@ extern "C" {
     //set amount of quality loss, 0 for no loss, 100 for maximum loss, negative values indicate adaptive lossy (second image should be the saliency map)
     FLIF_DLLIMPORT void FLIF_API flif_encoder_set_lossy(FLIF_ENCODER* encoder, int32_t loss);           // default: 0 (lossless)
 
-
+    FLIF_DLLIMPORT void FLIF_API flif_encoder_set_additional_props(FLIF_ENCODER* encoder, int32_t additional_props);
 
 #ifdef __cplusplus
 }

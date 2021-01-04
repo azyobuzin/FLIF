@@ -82,6 +82,9 @@ void show_help(int mode) {
     v_printf(2,"   -p, --no-color-profile      strip ICC color profile (default is to keep it)\n");
     v_printf(2,"   -o, --overwrite             overwrite existing files\n");
     v_printf(2,"   -k, --keep-palette          use input PNG palette / write palette PNG if possible\n");
+    v_printf(2,"       --prop-fr               use frame number property\n");
+    v_printf(2,"       --prop-pf-miss          use previous frame miss property\n");
+    v_printf(2,"       --prop-pf-tl            use top/left difference property\n");
 #ifdef HAS_ENCODER
     if (mode != 1) {
     v_printf(1,"Encode options: (-e, --encode)\n");
@@ -495,7 +498,10 @@ int main(int argc, char **argv) {
         {"overwrite", 0, NULL, 'o'},
         {"breakpoints", 0, NULL, 'b'},
         {"keep-palette", 0, NULL, 'k'},
-        {"print-tree", 0, NULL, 'a'},
+        {"print-tree", 0, NULL, 260},
+        {"prop-fr", 0, NULL, 261},
+        {"prop-pf-miss", 0, NULL, 262},
+        {"prop-pf-tl", 0, NULL, 263},
 #ifdef HAS_ENCODER
         {"encode", 0, NULL, 'e'},
         {"transcode", 0, NULL, 't'},
@@ -559,7 +565,10 @@ int main(int argc, char **argv) {
         case 'i': options.scale = -1; break;
         case 'b': options.show_breakpoints = 8; mode=1; break;
         case 'k': options.keep_palette = true; break;
-        case 'a': options.print_tree = 1; break;
+        case 260: options.print_tree = 1; break;
+        case 261: options.additional_props |= 1; break;
+        case 262: options.additional_props |= 2; break;
+        case 263: options.additional_props |= 4; break;
 #ifdef HAS_ENCODER
         case 'e': mode=0; break;
         case 't': mode=2; break;

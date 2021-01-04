@@ -90,11 +90,6 @@
 #define CONTEXT_TREE_MIN_COUNT 1
 #define CONTEXT_TREE_MAX_COUNT 512
 
-// previous frame properties
-#define PROP_PF_MISS 1
-#define PROP_PF_TL 1
-#define PROP_FR 1
-
 // DEFAULT ENCODE/DECODE OPTIONS ARE DEFINED BELOW
 
 
@@ -153,6 +148,7 @@ struct flif_options {
     int show_breakpoints;
     int no_full_decode;
     int keep_palette;
+    int additional_props;
     int print_tree;
 };
 
@@ -193,5 +189,18 @@ const struct flif_options FLIF_DEFAULT_OPTIONS = {
     0, // show_breakpoints
     0, // no_full_decode
     0, // keep_palette
+    0, // additional_props
     0, // print_tree
 };
+
+inline bool is_fr_enabled(int additional_props) {
+  return (additional_props & 1) != 0;
+}
+
+inline bool is_pf_miss_enabled(int additional_props) {
+  return (additional_props & 2) != 0;
+}
+
+inline bool is_pf_tl_enabled(int additional_props) {
+  return (additional_props & 4) != 0;
+}

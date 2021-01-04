@@ -207,6 +207,9 @@ FLIF_DLLEXPORT void FLIF_API flif_encoder_set_chance_cutoff(FLIF_ENCODER* encode
 FLIF_DLLEXPORT void FLIF_API flif_encoder_set_chance_alpha(FLIF_ENCODER* encoder, int32_t alpha) {
     encoder->options.alpha = alpha;
 }
+FLIF_DLLEXPORT void FLIF_API flif_encoder_set_additional_props(FLIF_ENCODER* encoder, int32_t additional_props) {
+    encoder->options.additional_props = additional_props;
+}
 
 FLIF_DLLEXPORT void FLIF_API flif_encoder_add_image(FLIF_ENCODER* encoder, FLIF_IMAGE* image) {
     try { encoder->add_image(image); }

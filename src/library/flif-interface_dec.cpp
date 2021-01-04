@@ -184,6 +184,10 @@ FLIF_DLLEXPORT void FLIF_API flif_decoder_set_fit(FLIF_DECODER* decoder, uint32_
     decoder->options.fit = 1;
 }
 
+FLIF_DLLEXPORT void FLIF_API flif_decoder_set_additional_props(FLIF_DECODER* decoder, int32_t additional_props) {
+    decoder->options.additional_props = additional_props;
+}
+
 FLIF_DLLEXPORT void FLIF_API flif_decoder_set_callback(FLIF_DECODER* decoder, callback_t callback, void *user_data) {
     try
     {
