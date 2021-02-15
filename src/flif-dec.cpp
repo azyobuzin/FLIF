@@ -1249,8 +1249,9 @@ bool flif_decode(IO& io, Images &images, callback_t callback, void *user_data, i
                 if (images.size()<2) return false;
                 int unique_frames=images.size()-1; // not considering first frame
                 for (Image& i : images) if (i.seen_before >= 0) unique_frames--;
-                if (unique_frames < 1) {return false;}
-                trans->configure(unique_frames*images[0].rows()); trans->configure(images[0].cols()); }
+                if (unique_frames >= 1) {
+                  trans->configure(unique_frames*images[0].rows()); trans->configure(images[0].cols()); }
+        }
         if (desc == "Duplicate_Frame") { if (images.size()<2) return false; else trans->configure(images.size()); }
 #endif
         if (desc == "Palette_Alpha") { trans->configure(images[0].alpha_zero_special); }
